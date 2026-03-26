@@ -64,11 +64,15 @@ services:
     ports:
       - "9000:9000"
       - "9001:9001"
+    networks:
+          - app-network
 
   minio-init:
     image: minio/mc
     depends_on:
       - minio
+    networks:
+      - app-network
     entrypoint: >
       /bin/sh -c "
       sleep 5;

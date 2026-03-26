@@ -45,7 +45,6 @@ class EventsService {
         const maxPage = Math.max(1, Math.ceil(total / safeLimit));
 
         if (safePage > maxPage) {
-            console.log(safePage, maxPage)
             throw new AppError('Page does not exist', 400, 'PAGE_OUT_OF_RANGE');
         }
 

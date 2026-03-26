@@ -31,6 +31,7 @@ services:
       - "${DB_PORT}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./sql:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
       interval: 10s
@@ -63,6 +64,19 @@ services:
     ports:
       - "9000:9000"
       - "9001:9001"
+
+  minio-init:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 5;
+      mc alias set myminio http://minio:9000 ${MINIO_USER} ${MINIO_PASSWORD};
+      mc mb myminio/events;
+      mc anonymous set public myminio/events;
+      exit 0;
+      "
 
 volumes:
   postgres_data:

@@ -14,6 +14,12 @@ class EventsController {
         res.status(201).send(event)
 
     }
+    async getById(req, res) {
+
+
+        const event = await eventsService.getById(req.params.id)
+        res.send(event)
+    }
 
 
 }

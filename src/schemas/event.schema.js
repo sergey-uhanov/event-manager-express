@@ -20,3 +20,19 @@ export const getEventsQuerySchema = z.object({
 
 });
 
+export const getEventsByIDQuerySchema = z.object({
+    param: z.object({
+       id: z.string().optional(),
+    })
+
+});
+
+export const updateEventSchema = z.object({
+    body: z.object({
+        title: z.string().optional(),
+        description: z.string().optional(),
+        location: z.string().optional(),
+        event_date: z.coerce.date().optional(),
+        max_participants: z.coerce.number().optional(),
+    }),
+});

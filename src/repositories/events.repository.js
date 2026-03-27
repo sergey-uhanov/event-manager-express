@@ -42,18 +42,34 @@ class EventRepository {
        return [countResult, dataResult]
     }
 
-    async findById(event_id) {
+    async findById(id) {
         const result = await pool.query(
-            `SELECT event_id,
-                    title,
-                    description,
-                    location,
-                    event_date,
-                    max_participants,
-                    created_at
-             FROM events
-             WHERE event_id = $1`,
-            [event_id]
+            `SELECT e.event_id,
+                    e.title,
+                    e.description,
+                    e.location,
+                    e.event_date,
+                    e.max_participants,
+                    e.created_at,
+                    COALESCE(
+                            json_agg(
+                                    json_build_object(
+                                            'file_id', f.file_id,
+                                            'key', f.key,
+                                            'filename', f.filename,
+                                            'mimetype', f.mimetype,
+                                            'size', f.size
+                                    )
+                            ) FILTER(WHERE f.file_id IS NOT NULL),
+                            '[]'
+                    ) AS files
+             FROM events e
+                      LEFT JOIN files f ON e.event_id = f.event_id
+
+             WHERE e.event_id = $1
+             GROUP BY e.event_id
+            `,
+            [id]
         );
 
         return result.rows[0] || null;
@@ -98,6 +114,8 @@ class EventRepository {
 
         return result.rows[0] || null;
     }
+
+    as
 }
 
 export default new EventRepository()

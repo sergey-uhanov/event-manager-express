@@ -2,7 +2,7 @@ import eventRepository from '../repositories/events.repository.js'
 import fileRepository from '../repositories/file.repository.js'
 import {AppError} from "../utils/app-error.js";
 import {uploadFileService} from "./upload-file.service.js";
-import {getFileUrl} from "../utils/get-file-url.js";
+import {addTempLinksImg} from "../utils/addTempLinksImg.js";
 
 class EventsService {
     async getAll({limit = 10, page = 1, sortBy = 'event_date', order = 'desc'} = {}) {
@@ -27,20 +27,7 @@ class EventsService {
         })
 
         // adding a temporary link to an image
-        const addImgUrl = await Promise.all(
-            dataResult.rows.map(async (item) => {
-                if (item.files.length) {
-                    item.files = await Promise.all(
-                        item.files.map(async (file) => {
-                            file.url = await getFileUrl(file.key, 'events');
-                            return file;
-                        })
-                    );
-                }
-
-                return item;
-            })
-        );
+        const addImgUrl = await addTempLinksImg(dataResult.rows)
         const total = Number(countResult.rows[0].count);
         const maxPage = Math.max(1, Math.ceil(total / safeLimit));
 
@@ -71,6 +58,18 @@ class EventsService {
 
         event.images = uploadedFiles;
         return event;
+    }
+
+    async getById(id) {
+
+        const idSave = Number.parseInt(id)
+
+        const event = await eventRepository.findById(idSave)
+        if (!event) {
+            throw new AppError('Event not found', 400, 'NOT_FOUND');
+        }
+
+        return await addTempLinksImg([event])
     }
 }
 

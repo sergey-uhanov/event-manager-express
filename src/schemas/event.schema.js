@@ -12,8 +12,8 @@ export const createEventSchema = z.object({
 
 export const getEventsQuerySchema = z.object({
     query: z.object({
-        limit: z.string().optional(),
-        page: z.string().optional(),
+        limit: z.coerce.number().int().min(1).max(100).optional(),
+        page: z.coerce.number().int().min(1).optional(),
         sortBy: z.enum(['title', 'event_date']).optional(),
         order: z.enum(['asc', 'desc']).optional(),
     })
@@ -21,14 +21,15 @@ export const getEventsQuerySchema = z.object({
 });
 
 export const getEventsByIDQuerySchema = z.object({
-    param: z.object({
-       id: z.string().optional(),
+    params: z.object({
+       id: z.coerce.number().int(),
     })
 
 });
 
 export const updateEventSchema = z.object({
     body: z.object({
+        id: z.coerce.number().int(),
         title: z.string().optional(),
         description: z.string().optional(),
         location: z.string().optional(),
@@ -36,3 +37,8 @@ export const updateEventSchema = z.object({
         max_participants: z.coerce.number().optional(),
     }),
 });
+export const deleteEventSchema = z.object({
+    params: z.object({
+        id: z.coerce.number().int(),
+    })
+})

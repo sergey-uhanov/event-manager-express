@@ -1,4 +1,4 @@
-import {PutObjectCommand} from '@aws-sdk/client-s3';
+import {DeleteObjectCommand, PutObjectCommand} from '@aws-sdk/client-s3';
 import {randomUUID} from 'crypto';
 import {s3} from "../db/minio.client.js";
 
@@ -14,4 +14,13 @@ export async function uploadFileService(file, target) {
 
     return key
 
+}
+
+export async function deleteFileService(key, bucket) {
+    await s3.send(new DeleteObjectCommand({
+        Bucket: bucket,
+        Key: key,
+    }));
+
+    return {success: true};
 }

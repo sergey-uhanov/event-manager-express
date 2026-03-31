@@ -3,7 +3,7 @@ import pool from "../db/pool.js";
 
 class EventRepository {
     async findAll({limit, sortBy, order, offset}) {
-       const  [countResult, dataResult] = await Promise.all([
+        const [countResult, dataResult] = await Promise.all([
             pool.query(`SELECT COUNT(*)
                         FROM events`),
             pool.query(
@@ -39,7 +39,7 @@ class EventRepository {
             )
         ]);
 
-       return [countResult, dataResult]
+        return [countResult, dataResult]
     }
 
     async findById(id) {
@@ -87,18 +87,18 @@ class EventRepository {
         return result.rows[0];
     }
 
-    async update(event_id, data) {
-        const {title, description, location, event_date, max_participants} = data;
+    async update(data) {
+        const {id, title, description, location, event_date, max_participants} = data;
 
         const result = await pool.query(
             `UPDATE events
-             SET title            = $1,
-                 description      = $2,
-                 location         = $3,
-                 event_date       = $4,
-                 max_participants = $5
-             WHERE event_id = $6 RETURNING event_id, title, description, location, event_date, max_participants, created_at`,
-            [title, description, location, event_date, max_participants, event_id]
+             SET title            = COALESCE($1, title),
+                 description      = COALESCE($2, description),
+                 location         = COALESCE($3, location),
+                 event_date       = COALESCE($4, event_date),
+                 max_participants = COALESCE($5, max_participants)
+             WHERE event_id = $6 RETURNING *`,
+            [title, description, location, event_date, max_participants, id]
         );
 
         return result.rows[0] || null;
@@ -111,11 +111,8 @@ class EventRepository {
              WHERE event_id = $1 RETURNING event_id`,
             [event_id]
         );
-
-        return result.rows[0] || null;
+        return result.rows[0].event_id || null;
     }
-
-    as
 }
 
 export default new EventRepository()

@@ -1,11 +1,19 @@
-import eventRepository from '../repositories/events.repository.js'
-import fileRepository from '../repositories/file.repository.js'
-import {AppError} from "../utils/app-error.js";
-import {uploadFileService} from "./upload-file.service.js";
-import {addTempLinksImg} from "../utils/addTempLinksImg.js";
+export class EventsService {
+    constructor({
+                    eventRepository,
+                    fileRepository,
+                    uploadFileService,
+                    deleteFileService,
+                    addTempLinksImg
+                }) {
+        this.eventRepository = eventRepository;
+        this.fileRepository = fileRepository;
+        this.uploadFileService = uploadFileService;
+        this.deleteFileService = deleteFileService;
+        this.addTempLinksImg = addTempLinksImg;
+    }
 
-class EventsService {
-    async getAll({limit = 10, page = 1, sortBy = 'event_date', order = 'desc'} = {}) {
+    async getAll({ limit = 10, page = 1, sortBy = 'event_date', order = 'desc' } = {}) {
         const safeLimit = Math.min(Number(limit) || 10, 100);
         const safePage = Number(page) || 1;
 
@@ -19,15 +27,15 @@ class EventsService {
 
         const offset = safeLimit * (safePage - 1);
 
-        const [countResult, dataResult] = await eventRepository.findAll({
+        const [countResult, dataResult] = await this.eventRepository.findAll({
             limit: safeLimit,
             sortBy: safeSortBy,
             order: safeOrder,
             offset
-        })
+        });
 
-        // adding a temporary link to an image
-        const addImgUrl = await addTempLinksImg(dataResult.rows)
+        const dataWithImg = await this.addTempLinksImg(dataResult.rows);
+
         const total = Number(countResult.rows[0].count);
         const maxPage = Math.max(1, Math.ceil(total / safeLimit));
 
@@ -36,7 +44,7 @@ class EventsService {
         }
 
         return {
-            data: addImgUrl,
+            data: dataWithImg,
             total,
             limit: safeLimit,
             totalPages: maxPage,
@@ -44,16 +52,23 @@ class EventsService {
         };
     }
 
-    async create(req) {
-        const event = await eventRepository.create(req.body)
+    async create({ body, files }) {
+        const event = await this.eventRepository.create(body);
 
         const uploadedFiles = [];
 
-        for (const file of req.files) {
-            const uploadedKey = await uploadFileService(file, 'events');
-            const metaData = await fileRepository.createMetaDataImage(file, event.event_id, uploadedKey);
+        if (files?.length) {
+            for (const file of files) {
+                const uploadedKey = await this.uploadFileService(file, 'events');
 
-            uploadedFiles.push(metaData)
+                const metaData = await this.fileRepository.createMetaDataImage(
+                    file,
+                    event.event_id,
+                    uploadedKey
+                );
+
+                uploadedFiles.push(metaData);
+            }
         }
 
         event.images = uploadedFiles;
@@ -61,16 +76,54 @@ class EventsService {
     }
 
     async getById(id) {
+        const idSafe = Number.parseInt(id);
 
-        const idSave = Number.parseInt(id)
+        const event = await this.eventRepository.findById(idSafe);
 
-        const event = await eventRepository.findById(idSave)
         if (!event) {
             throw new AppError('Event not found', 400, 'NOT_FOUND');
         }
 
-        return await addTempLinksImg([event])
+        return await this.addTempLinksImg([event]);
+    }
+
+    async update({ body, files }) {
+        const event = await this.eventRepository.update(body);
+
+        if (!event) {
+            throw new AppError('Event not found', 400, 'NOT_FOUND');
+        }
+
+        const uploadedFiles = [];
+
+        if (files?.length) {
+            const oldFiles = await this.fileRepository.deleteFiles(event.event_id);
+
+            for (const file of files) {
+                const uploadedKey = await this.uploadFileService(file, 'events');
+
+                const metaData = await this.fileRepository.createMetaDataImage(
+                    file,
+                    event.event_id,
+                    uploadedKey
+                );
+
+                uploadedFiles.push(metaData);
+            }
+
+            event.files = uploadedFiles;
+
+            for (const oldFile of oldFiles) {
+                await this.deleteFileService(oldFile.key, 'events');
+            }
+        }
+
+        await this.addTempLinksImg([event]);
+
+        return event;
+    }
+
+    async delete(id) {
+        return await this.eventRepository.delete(id);
     }
 }
-
-export default new EventsService();

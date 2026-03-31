@@ -1,27 +1,38 @@
-import eventsService from "../services/events.service.js";
-
-class EventsController {
-    async getAll(req, res) {
-        const events = await eventsService.getAll(req.query)
-        res.status(200).send(events)
-
+export default class EventsController {
+    constructor(eventsService) {
+        this.eventsService = eventsService;
     }
 
-    async create(req, res) {
+    getAll = async (req, res) => {
+        const events = await this.eventsService.getAll(req.query);
+        res.send(events);
+    };
 
-         const event = await eventsService.create(req)
+    create = async (req, res) => {
+        const event = await this.eventsService.create({
+            body: req.body,
+            files: req.files
+        });
 
-        res.status(201).send(event)
+        res.status(201).send(event);
+    };
 
-    }
-    async getById(req, res) {
+    getById = async (req, res) => {
+        const event = await this.eventsService.getById(req.params.id);
+        res.send(event);
+    };
 
+    update = async (req, res) => {
+        const event = await this.eventsService.update({
+            body: req.body,
+            files: req.files
+        });
 
-        const event = await eventsService.getById(req.params.id)
-        res.send(event)
-    }
+        res.send(event);
+    };
 
-
+    delete = async (req, res) => {
+        const id = await this.eventsService.delete(req.params.id);
+        res.send(`Event with id ${id} successfully deleted`);
+    };
 }
-
-export default new EventsController()

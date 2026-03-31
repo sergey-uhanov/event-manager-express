@@ -22,7 +22,6 @@ export function errorHandler(err, req, res, next) {
             details: normalized.details
         }
     };
-    console.log('error!!!!!!!!!!!!!!!!!!!!!')
     req.log.error(body);
-     res.status(normalized.statusCode).send(body);
+    res.status(normalized.statusCode).send(body);
 }

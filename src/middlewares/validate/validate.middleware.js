@@ -1,5 +1,3 @@
-
-
 export function validate(schema) {
     return (req, res, next) => {
         const result = schema.safeParse({
@@ -12,10 +10,17 @@ export function validate(schema) {
             return next(result.error)
         }
 
-        // result.data.body && (req.body = result.data.body)
-        // result.data.query && (req.query = result.data.query)
-        // result.data.params && (req.params = result.data.params)
+        if (result.data.body) {
+            Object.assign(req.body, result.data.body);
+        }
 
+        if (result.data.query) {
+            Object.assign(req.query, result.data.query);
+        }
+
+        if (result.data.params) {
+            Object.assign(req.params, result.data.params);
+        }
         next();
     };
 }
